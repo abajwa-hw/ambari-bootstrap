@@ -183,6 +183,10 @@ case "${lsb_dist}" in
             ln -sf /etc/alternatives/java_sdk /usr/java/default
             #update-alternatives --set java /usr/lib/jvm/jre-1.${java_version}.0-openjdk/bin/java
             JAVA_HOME='/usr/java/default'
+            if [ "${lsb_dist_release}" == '6' ]; then   
+                # https://community.hortonworks.com/articles/188269/javapython-updates-and-ambari-agent-tls-settings.html
+                sed -i.bak "s/, 3DES_EDE_CBC//" /usr/java/default/jre/lib/security/java.security            
+            fi
         fi
 
         printf "## fetch ambari repo\n"
@@ -194,8 +198,10 @@ case "${lsb_dist}" in
         if [ "${install_ambari_agent}" = true ]; then
             printf "## installing ambari-agent\n"
             yum install -q -y ambari-agent
-             sed -i.orig -r 's/^[[:space:]]*hostname=.*/hostname='"${ambari_server}"'/;s/\[security\]/\[security\]\nforce_https_protocol=PROTOCOL_TLSv1_2/' \
+            if [ "${lsb_dist_release}" == '7' ]; then
+              sed -i.orig -r 's/^[[:space:]]*hostname=.*/hostname='"${ambari_server}"'/;s/\[security\]/\[security\]\nforce_https_protocol=PROTOCOL_TLSv1_2/' \
                 /etc/ambari-agent/conf/ambari-agent.ini
+            fi
             chkconfig ambari-agent on
             ambari-agent start
         fi
